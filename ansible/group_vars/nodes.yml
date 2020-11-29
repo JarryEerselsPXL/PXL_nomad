@@ -1,3 +1,4 @@
+---
 consul_master: "no" 
 consul_join: "yes" 
 consul_server: "no"

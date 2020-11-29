@@ -3,11 +3,11 @@
   yum_repository:
     name: docker-ce
     description: docker repo
-    baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
-    gpgcheck: no
+    baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+    gpgkey: https://download.docker.com/linux/centos/gpg
 
 - name: Install Docker
-  package:
+  yum:
     name: docker-ce
     state: present
   become: yes

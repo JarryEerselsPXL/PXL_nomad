@@ -1,46 +1,29 @@
 ---
-# This role will install and run nomad
-- name: Download and extract Nomad if needed
-  unarchive:
-    src: "https://releases.hashicorp.com/nomad/{{ nomad_version }}/nomad_{{ nomad_version }}_linux_amd64.zip"
-    dest: /usr/bin
-    creates: "nomad_{{ nomad_version }}_linux_amd64.zip"
-    remote_src: yes
-
-- name: Create nomad user
-  user:
+- name: Add Nomad repository
+  yum_repository:
     name: nomad
-    home: /etc/nomad.d
-    system: yes
-    shell: /usr/bin/false
+    description: add nomad repository
+    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
+    gpgkey: https://rpm.releases.hashicorp.com/gpg
+
+- name: Install Nomad
+  yum:
+    name: nomad
     state: present
 
-- name: Create data directory
+- name: Create a directory if it does not exist
   file:
-    path: /opt/nomad
+    path: /opt/nomad/
     state: directory
-    owner: nomad
-    group: nomad
-    mode: 0755
+    mode: '0755'
 
-- name: Copy config
+- name: Template Nomad file
   template:
-    src: "nomad.hcl.j2"
-    dest: "/etc/nomad.d/nomad.hcl"
-    owner: nomad
-    group: nomad
-    mode: 0644
-
-- name: Systemd file for nomad
-  template: 
-   src: nomad.service.j2
-   dest: /etc/systemd/system/nomad.service
-   mode: 0644
-   force: yes  
+    src: nomad.hcl.j2
+    dest: /etc/nomad.d/nomad.hcl
 
 - name: Start nomad service
   systemd:
     name: nomad
     state: restarted
-    daemon_reload: yes
     enabled: yes

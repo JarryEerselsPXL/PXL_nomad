@@ -1,5 +1,5 @@
 datacenter = "dc1",
-data_dir = "/opt/nomad",
+data_dir = "/opt/nomad/{{ inventory_hostname }}",
 bind_addr = "{{ ansible_eth1.ipv4.address }}",
 {% if nomad_server == "yes" %}
 server {
@@ -8,11 +8,10 @@ server {
     bootstrap_expect = {{ groups['servers'] | length }},
 {% endif %}
 }
-{% endif %}
-{% if nomad_server == "no" %}
+{% else %}
 client {
     enabled = true,
-    servers = [ "10.0.0.10" ]
-    network_interface = "eth1"
+    servers = [ "10.0.0.10" ],
+    network_interface = "eth1",
 }
 {% endif %}

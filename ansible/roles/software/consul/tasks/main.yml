@@ -1,50 +1,23 @@
 ---
-- name: Install package unzip
-  yum: 
-   name: unzip 
-   state: present
-
-- name: Download and extract Consul if needed
-  unarchive:
-    src: "https://releases.hashicorp.com/consul/{{ consul_version }}/consul_{{ consul_version }}_linux_amd64.zip"
-    dest: /usr/bin
-    creates: "consul_{{ consul_version }}_linux_amd64.zip"
-    remote_src: yes
-
-- name: Create consul user
-  user:
+- name: Add Consul repository
+  yum_repository:
     name: consul
-    home: /etc/consul.d
-    system: yes
-    shell: /usr/bin/false
+    description: add consul repository
+    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
+    gpgkey: https://rpm.releases.hashicorp.com/gpg
+
+- name: Install Consul
+  yum:
+    name: consul
     state: present
 
-- name: Create data directory
-  file:
-    path: /opt/consul
-    state: directory
-    owner: consul
-    group: consul
-    mode: 0755
-
-- name: Copy config
+- name: Template Consul file
   template:
-    src: "consul.hcl.j2"
-    dest: "/etc/consul.d/consul.hcl"
-    owner: consul
-    group: consul
-    mode: 0644
-
-- name: Copy systemd service
-  template:
-    src: "consul.service.j2"
-    dest: "/etc/systemd/system/consul.service"
-    mode: 0644
-    force: yes
+    src: consul.hcl.j2
+    dest: /etc/consul.d/consul.hcl
 
 - name: Start consul service
   systemd:
     name: consul
     state: restarted
-    daemon_reload: yes
     enabled: yes
