@@ -1,48 +1,237 @@
-# Nomad consul
+# Team 18 Linux PE 2
+Teammembers Jarry Eersels & Niels Dewolf
 
-The aim of this project is to provide a development environment based on [consul](https://www.consul.io) and [nomad](https://www.nomadproject.io) to manage container based microservices.
-
-The following steps should make that clear;
-
-bring up the environment by using [vagrant](https://www.vagrantup.com) which will create centos 7 virtualbox machine or lxc container.
-
-The proved working vagrant providers used on an [ArchLinux](https://www.archlinux.org/) system are
-* [vagrant-lxc](https://github.com/fgrehm/vagrant-lxc)
-* [vagrant-libvirt](https://github.com/vagrant-libvirt/)
-* [virtualbox](https://www.virtualbox.org/)
+# Installatie en Configuratie
+Met volgend commando starten 3 virtuele machines op, 1 server en 2 nodes.
 
 ```bash
-    $ vagrant up --provider lxc
-    OR
-    $ vagrant up --provider libvirt
-    OR
-    $ vagrant up --provider virtualbox
+    $ vagrant up
 ```
 
-Once it is finished, you should be able to connect to the vagrant environment through SSH and interact with Nomad:
+Deze server en nodes worden aan de hand van een Vagrantfile opgestart.
+In de Vagrantfile worden volgende delen behandeld:
+
+- Statische IP's toevoegen aan elke virtuele machine.
+- Het runnen van een Ansible playbook op alle vm's
+- Forwarden van de Nomad port van de server vm
+- Forwarden van de Consul port van de server vm
 
 ```bash
-    $ vagrant ssh
-    [vagrant@nomad ~]$
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+BOX_IMAGE = "centos/7"
+NODE_COUNT = 2
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vbguest.auto_update = false
+  config.vm.box = "centos/7"
+
+  config.vm.provider :virtualbox do |virtualbox, override|
+    virtualbox.customize ["modifyvm", :id, "--memory", 2048]
+  end
+
+  config.vm.define :server do |server|
+    server.vm.hostname = "server"
+    server.vm.network "private_network", ip: "10.0.0.10"
+    server.vm.network "forwarded_port", guest_ip: "10.0.0.10", guest: 4646, host: 4646, auto_correct: true, host_ip: "127.0.0.1"
+    server.vm.network "forwarded_port", guest: 8500, host: 8500, auto_correct: true, host_ip: "127.0.0.1"
+  end
+
+  (1..NODE_COUNT).each do |i|
+    config.vm.define :"node#{i}" do |node|
+      node.vm.box = BOX_IMAGE
+      node.vm.hostname = "node#{i}"
+      node.vm.network :private_network, ip: "10.0.0.#{i + 10}"
+    end	
+  end
+
+  config.vm.provision "ansible_local" do |ansible|
+    ansible.config_file = "ansible/ansible.cfg"
+    ansible.playbook = "ansible/plays/play.yml"
+    ansible.groups = {
+      "servers" => ["server"],
+      "servers:vars" => {"consul_master" => "yes", "consul_join" => "no", 
+      "consul_server"=> "yes", "nomad_master" => "yes", "nomad_server" => "yes"},
+      "nodes" => ["node1", "node2"],
+      "nodes:vars" => {"consul_master" => "no", "consul_join" => "yes", 
+      "consul_server"=> "no", "nomad_master" => "no", "nomad_server" => "no"},
+    }
+  end
+
+end
 ```
 
-Team 18 Linux PE
-Teamleden: Jarry Eersels & Niels Dewolf
+De software op de vm's worden geïnstalleerd via een Ansible playbook. Op de server wordt Nomad en Consul geïnstalleerd en op de nodes Nomad, Consul en Docker.
 
-Doel van de PE is een Een productie waardige nomad cluster met consul als service discovery en docker als driver installeren, configureren en starten door gebruik te maken van de vagrant shell provisioner in een vagrant multi machine omgeving. 
+Hiervoor wordt volgende playbook gebruikt:
 
-In de vagrantfile worden 3 vm's aangemaakt waarvan eentje zal dienen als nomad server en de overige 2 als nomad agent. Op al deze vm's worden Docker, Consul en Nomad geïnstalleerd aan de hand van het script install.sh. 
-Er wordt ook dos2unix geïnstalleerd om later Windows files te kunnen overzetten op de vm's zonder parsing errors.
+```bash
+---
+- name: playbook for server vm
+  hosts: servers
+  become: yes
 
-Na de installatie van Docker, Consul, Nomad en dos2unix worden de agents van Consul en Nomad geconfigureerd aan de hand van 2 scripts. 
-De server gebruikt het agentServer.sh script en de nodes gebruiken het agentClient.sh script. Deze scripts gaan de voorafgemaakte configuratiefiles op de juiste plaats zetten in de vm's en de Nomad en Consul agents starten.
+  roles:
+    - role: software/consul
+    - role: software/nomad
 
-De nomad server consul configuratie is zo geconfigureerd dat de nomad agents automatisch joinen.
-Ook wordt er tijdens het agentServer.sh script ook al een webserver job file aangemaakt zodat deze makkelijk te runnen is met 1 commando.
+- name: playbook for node vm
+  hosts: nodes
+  become: yes
 
-Bronnen:
-https://manski.net/2016/09/vagrant-multi-machine-tutorial/
-https://www.vagrantup.com/docs/multi-machine
-https://www.consul.io/docs/agent/options.html
-https://www.nomadproject.io/docs/configuration
-https://learn.hashicorp.com/tutorials/consul/get-started-create-datacenter
+  roles:
+    - role: software/docker
+    - role: software/consul
+    - role: software/nomad
+```
+
+Om de software te kunnen isntalleren voeren de roles volgende tasks uit:
+
+Consul:
+
+```bash
+---
+- name: Add Consul repository
+  yum_repository:
+    name: consul
+    description: add consul repository
+    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
+    gpgkey: https://rpm.releases.hashicorp.com/gpg
+
+- name: Install Consul
+  yum:
+    name: consul
+    state: present
+
+- name: Template Consul file
+  template:
+    src: consul.hcl.j2
+    dest: /etc/consul.d/consul.hcl
+
+- name: Start consul service
+  systemd:
+    name: consul
+    state: restarted
+    enabled: yes
+```
+
+Nomad:
+
+```bash
+---
+- name: Add Nomad repository
+  yum_repository:
+    name: nomad
+    description: add nomad repository
+    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
+    gpgkey: https://rpm.releases.hashicorp.com/gpg
+
+- name: Install Nomad
+  yum:
+    name: nomad
+    state: present
+
+- name: Create a directory if it does not exist
+  file:
+    path: /opt/nomad/
+    state: directory
+    mode: '0755'
+
+- name: Template Nomad file
+  template:
+    src: nomad.hcl.j2
+    dest: /etc/nomad.d/nomad.hcl
+
+- name: Start nomad service
+  systemd:
+    name: nomad
+    state: restarted
+    enabled: yes
+```
+
+Docker
+
+```bash
+---
+- name: Add Docker repository
+  yum_repository:
+    name: docker-ce
+    description: docker repo
+    baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+    gpgkey: https://download.docker.com/linux/centos/gpg
+
+- name: Install Docker
+  yum:
+    name: docker-ce
+    state: present
+  become: yes
+
+- name: Start Docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+  become: yes
+
+- name: Add user vagrant to docker group
+  user:
+    name: vagrant
+    groups: docker
+    append: yes
+  become: yes
+```
+
+Om Nomad en Consul te configueren wordt in de roles volgende .j2 scipts geïmporteerd:
+
+Consul:
+
+```bash
+datacenter = "dc1",
+enable_syslog = true,
+client_addr = "0.0.0.0",
+bind_addr = "{{ ansible_eth1.ipv4.address }}",
+rejoin_after_leave = true,
+ui = true,
+{% if consul_master == "yes" %}
+bootstrap_expect = {{ groups['servers'] | length }},
+{% endif %}
+{% if consul_join == "yes" %}
+start_join = [ "10.0.0.10" ],
+{% endif %}
+data_dir = "/opt/consul/",
+{% if consul_server == "yes" %}
+server = true
+{% else %}
+server = false
+{% endif %}    
+```
+
+Nomad:
+```bash
+datacenter = "dc1",
+data_dir = "/opt/nomad/{{ inventory_hostname }}",
+bind_addr = "{{ ansible_eth1.ipv4.address }}",
+{% if nomad_server == "yes" %}
+server {
+    enabled = true,
+{% if nomad_master == "yes" %}
+    bootstrap_expect = {{ groups['servers'] | length }},
+{% endif %}
+}
+{% else %}
+client {
+    enabled = true,
+    servers = [ "10.0.0.10" ],
+    network_interface = "eth1",
+}
+{% endif %}
+```
+
+Verdeling van de taken:
+
+- De eerste versie van Consul en Docker zijn geschreven door Jarry.
+- De eerste versie van Nomad is geschreven door Niels.
+- De Vagrentfile is geschreven door beide teamleden.
+- De verbeteringen van de scripts zijn gedaan door beide teamleden.
