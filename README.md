@@ -1,7 +1,7 @@
 # Team 18 Linux PE 2
-Teammembers Jarry Eersels & Niels Dewolf
+Teamleden Jarry Eersels & Niels Dewolf
 
-# Installatie en Configuratie
+<h2> Installatie en Configuratie </h2>
 Met volgend commando starten 3 virtuele machines op, 1 server en 2 nodes.
 
 ```bash
@@ -235,3 +235,12 @@ Verdeling van de taken:
 - De eerste versie van Nomad is geschreven door Niels.
 - De Vagrentfile is geschreven door beide teamleden.
 - De verbeteringen van de scripts zijn gedaan door beide teamleden.
+
+Bronnen:
+
+- https://github.com/visibilityspots/PXL_nomad/tree/master/ansible
+- https://github.com/fhemberger/nomad-demo
+- https://github.com/nickvth/ansible-consul-nomad
+- https://www.consul.io/
+- https://www.nomadproject.io/
+- https://www.vagrantup.com/docs/provisioning/ansible
