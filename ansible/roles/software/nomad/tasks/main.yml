@@ -1,0 +1,29 @@
+---
+- name: Add Nomad repository
+  yum_repository:
+    name: nomad
+    description: add nomad repository
+    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
+    gpgkey: https://rpm.releases.hashicorp.com/gpg
+
+- name: Install Nomad
+  yum:
+    name: nomad
+    state: present
+
+- name: Create a directory if it does not exist
+  file:
+    path: /opt/nomad/
+    state: directory
+    mode: '0755'
+
+- name: Template Nomad file
+  template:
+    src: nomad.hcl.j2
+    dest: /etc/nomad.d/nomad.hcl
+
+- name: Start nomad service
+  systemd:
+    name: nomad
+    state: restarted
+    enabled: yes

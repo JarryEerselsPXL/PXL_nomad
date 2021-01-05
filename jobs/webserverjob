@@ -1,0 +1,35 @@
+job "webserver" {
+    datacenters = ["dc1"]
+    type        = "service"
+
+    group "webserver" {
+        count = 2
+  	    network {
+  		    port "webserver_port" {
+    	        to = 80
+      	         static = 22222
+			}
+		}
+        service {
+	        name = "webserver"
+            tags =  [
+                "webserver"
+            ]
+            port = "webserver_port"
+        }
+	    task "webserver" {
+            driver = "docker"
+            config {
+      	        image = "jarryeerselspxl/httpd-apache_exporter:latest"
+                ports = ["webserver_port"]
+                logging {
+        	        type = "journald"
+                    config {
+          	            tag = "WEBSERVER"
+                    }
+                }
+            } 
+  	    } 
+    }
+}
+

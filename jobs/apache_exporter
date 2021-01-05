@@ -1,0 +1,42 @@
+job "apache_exporter" {
+    datacenters = ["dc1"]
+    type        = "service"
+    constraint {
+        distinct_hosts = true
+    }
+    group "apache-exporter" {
+        count = 2
+  	    network {
+  		    port "apache_exporter_port" {
+    	        to = 9117
+      	         static = 9117
+			}
+		}
+        service {
+	        name = "apache-exporter"
+            tags =  [
+                "apache_exporter", "metrics"
+            ]
+            port = "apache_exporter_port"
+        }
+	    task "apache_exporter" {
+            driver = "docker"
+            config {
+      	        image = "bitnami/apache-exporter:latest"
+                ports = ["apache_exporter_port"]
+                args = [
+                    "--scrape_uri=http://${attr.unique.network.ip-address}:22222/server-status/?auto",
+                ]
+                logging {
+        	        type = "journald"
+                    config {
+          	            tag = "APACHE_EXPORTER"
+                    }
+                }
+            }
+            resources {
+      	        memory = 100
+            } 
+  	    } 
+    }
+}

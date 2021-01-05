@@ -1,0 +1,23 @@
+---
+- name: Add Consul repository
+  yum_repository:
+    name: consul
+    description: add consul repository
+    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
+    gpgkey: https://rpm.releases.hashicorp.com/gpg
+
+- name: Install Consul
+  yum:
+    name: consul
+    state: present
+
+- name: Template Consul file
+  template:
+    src: consul.hcl.j2
+    dest: /etc/consul.d/consul.hcl
+
+- name: Start consul service
+  systemd:
+    name: consul
+    state: restarted
+    enabled: yes

@@ -1,0 +1,66 @@
+job "alertmanager" {
+	datacenters = ["dc1"]
+    type        = "service"
+
+    group "alertmanager" {
+        count = 1
+  	    network {
+  		    port "alertmanager_ui" {
+    	    to = 9093
+      	     static = 9093
+			}
+		}
+        service {
+	        name = "alertmanager"
+            port = "alertmanager_ui"
+            tags = [
+      	        "metrics"
+            ]
+        }
+	    task "alertmanager" {
+             template {
+                change_mode = "noop"
+                destination = "local/alertmanager.yml"
+                data = <<EOH
+global:
+  # The smarthost and SMTP sender used for mail notifications.
+
+# The directory from which notification templates are read.
+templates: 
+- '/etc/alertmanager/template/*.tmpl'
+
+# The root route on which each incoming alert enters.
+route:
+  group_by: ['alertname']
+  group_wait: 20s
+  group_interval: 5m
+  repeat_interval: 3h 
+  receiver: discord_webhook
+
+receivers:
+- name: 'discord_webhook'
+  webhook_configs:
+  - url: 'http://10.0.0.12:9094'
+  - url: 'http://10.0.0.11:9094'
+EOH
+      }
+            driver = "docker"
+            config {
+      	        image = "prom/alertmanager:latest"
+                ports = ["alertmanager_ui"]
+                logging {
+        	        type = "journald"
+                    config {
+          	            tag = "ALERTMANAGER"
+                    }
+                }
+                volumes = [
+                    "local/alertmanager.yml:/etc/alertmanager/alertmanager.yml",     
+                ]
+            }
+            resources {
+      	        memory = 100
+            }
+  	    }       
+    }
+}

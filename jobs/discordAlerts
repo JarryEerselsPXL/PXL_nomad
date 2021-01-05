@@ -1,0 +1,37 @@
+job "discordAlerts" {
+    datacenters = ["dc1"]
+    type        = "service"
+
+    group "discordAlerts" {
+        count = 1
+  	    network {
+  		    port "discordAlerts_port" {
+    	        to = 9094
+      	         static = 9094
+			}
+		}
+        service {
+	        name = "discordAlerts"
+            tags =  [
+                "discordAlerts", "alertmanager"
+            ]
+            port = "discordAlerts_port"
+        }
+	    task "discordAlerts" {
+            driver = "docker"
+            config {
+      	        image = "benjojo/alertmanager-discord"
+                ports = ["discordAlerts_port"]
+                logging {
+        	        type = "journald"
+                    config {
+          	            tag = "DISCORDALERTS"
+                    }
+                }
+            }
+            env {
+                DISCORD_WEBHOOK = "https://discord.com/api/webhooks/795038213613027348/humqlVLtuMyFDtwxjiGIJdtWVpaP7jxMTJmFBE74KTInrjHWJZxOeAgKzxFIZ0iMl4CN"
+            } 
+  	    } 
+    }
+}
