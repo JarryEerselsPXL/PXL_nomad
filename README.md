@@ -1,4 +1,4 @@
-# Team 18 Linux PE 2
+# Team 18 Linux PE 3
 Teamleden Jarry Eersels & Niels Dewolf
 
 <h2> Installatie en Configuratie </h2>
@@ -734,7 +734,7 @@ We hebben een dashboard voor Consul, Nomad, de Nomad jobs, de Apache exporter en
 
 
 
-Verdeling van de taken:
+<h2>Verdeling van de taken:</h2>
 
 - De Prometheus job Jarry
 - De node exporter Jarry
@@ -747,7 +747,7 @@ Verdeling van de taken:
 - Dashboards beide teamleden
 
 
-Bronnen:
+<h2>Bronnen:</h2>
 
 - https://prometheus.io/docs/introduction/overview/
 - https://github.com/benjojo/alertmanager-discord
