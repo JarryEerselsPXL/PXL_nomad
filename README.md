@@ -736,15 +736,16 @@ We hebben een dashboard voor Consul, Nomad, de Nomad jobs, de Apache exporter en
 
 <h2>Verdeling van de taken:</h2>
 
-- De Prometheus job Jarry
-- De node exporter Jarry
-- Alert manager Jarry
-- Discord alert Jarry
-- Webserver job Niels
-- Grafana Niels
-- Consul exporter beide teamleden
-- Apache exporter beide teamleden
-- Dashboards beide teamleden
+- De Prometheus job werd gemaakt door Jarry
+- De node exporter werd gemaakt door Jarry
+- De Alert manager werd gemaakt door Jarry
+- De wonderbare Discord alert werd gemaakt door Jarry
+- De Webserver job werd gemaakt door Niels
+- De Grafana job werd gemaakt door Niels
+- De README.md werd geschreven door Niels
+- Consul exporter werd gemaakt door beide teamleden
+- Apache exporter werd gemaakt door beide teamleden
+- De dashboards werden gemaakt door beide teamleden
 
 
 <h2>Bronnen:</h2>
@@ -760,3 +761,6 @@ We hebben een dashboard voor Consul, Nomad, de Nomad jobs, de Apache exporter en
 - https://github.com/Lusitaniae/apache_exporter
 - https://github.com/samber/awesome-prometheus-alerts
 - https://awesome-prometheus-alerts.grep.to/rules.html
+- https://grafana.com/grafana/dashboards/1860?pg=dashboards&plcmt=featured-sub1
+- https://grafana.com/grafana/dashboards/3894
+- https://grafana.com/grafana/dashboards/12049
